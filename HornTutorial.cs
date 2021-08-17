@@ -10,7 +10,7 @@ public class HornTutorial : MonoBehaviour, IPointerDownHandler, IPointerUpHandle
 
 	[Header("The Minimum Duration Of The Sound")]
 	[SerializeField]
-	private float minHornDuration = 0.07f;
+	private float minHornDuration = 0.05f;
 
 
 	#region Events
@@ -67,9 +67,13 @@ public class HornTutorial : MonoBehaviour, IPointerDownHandler, IPointerUpHandle
 	#endregion
 
 	#region Animations
-	[Header("The X Scale Of The Horn When Being Animated")]
+	[Header("The Scale Of The Horn When Being Animated")]
 	[SerializeField]
-	private float hornAnimationXScale = 1.2f;
+	private Vector2 hornAnimationScale = new Vector2(0.9f, 0.9f);
+
+	[Header("The speed of the horn animation")]
+	[SerializeField]
+	private float animationSpeed = 10f;
 
 	//The transform of the horn button, which will be animated
 	private Transform horn;
@@ -77,6 +81,7 @@ public class HornTutorial : MonoBehaviour, IPointerDownHandler, IPointerUpHandle
 	//The initial horn scale. The horn scale will be reset to the initial value when the player stops clicking the horn
 	//button or when the horn sound finishes playing(if it is not set to loop)
 	private Vector3 initialHornScale;
+	private Coroutine animateHornCoroutine;
 
 	private void Start()
 	{
@@ -89,14 +94,34 @@ public class HornTutorial : MonoBehaviour, IPointerDownHandler, IPointerUpHandle
 
 	private void PlayHornAnimation()
 	{
-		Vector3 hornScale = horn.localScale;
-		hornScale.x = hornAnimationXScale;
-		horn.localScale = hornScale;
+		if (animateHornCoroutine != null)
+			StopCoroutine(animateHornCoroutine);
+
+		animateHornCoroutine = StartCoroutine(AnimateHorn(hornAnimationScale));
 	}
 
+	private IEnumerator AnimateHorn(Vector3 newScale)
+    {
+		float percentage = 0f;
+		Vector3 oldScale = horn.localScale;
+		newScale.z = 1;
+
+		while(horn.localScale != newScale)
+        {
+			percentage += Time.deltaTime * animationSpeed;
+
+			horn.localScale = Vector3.Lerp(oldScale, newScale, percentage);
+
+			yield return null;
+        }
+    }
+	
 	private void StopHornAnimation()
 	{
-		horn.localScale = initialHornScale;
+		if (animateHornCoroutine != null)
+			StopCoroutine(animateHornCoroutine);
+
+		animateHornCoroutine = StartCoroutine(AnimateHorn(initialHornScale));
 	}
 	#endregion
 
@@ -106,7 +131,7 @@ public class HornTutorial : MonoBehaviour, IPointerDownHandler, IPointerUpHandle
 	{
 		yield return new WaitForSeconds(0.1f);
 
-		if (horn.localScale.x != initialHornScale.x)
+		if (horn.localScale != initialHornScale)
         {
 			if (!hornSound.isPlaying)
 				StopHornAnimation();
